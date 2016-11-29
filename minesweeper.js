@@ -1,7 +1,7 @@
 // Test Funcs
 // See Inspect Element's Console Log Output
 
-// getGameXML();
+
 
 /*
  getNewGame(`
@@ -45,11 +45,11 @@ title_bar.className="title-bar";
 
 win.appendChild(title_bar);
 
-var game_title= document.createElement("span");
-game_title.id="game-title";
+var game_tit= document.createElement("span");
+game_tit.id="game-title";
 t = document.createTextNode("Minesweeper Online - Beginner!");
-game_title.appendChild(t);
-title_bar.appendChild(game_title);
+game_tit.appendChild(t);
+title_bar.appendChild(game_tit);
 
 var d= document.createElement("div");
 
@@ -93,3 +93,29 @@ win.appendChild(d);
 document.body.appendChild(win);
 
 // ------------------------first step finished!
+
+var xml_str = getGameXML();
+
+parser = new DOMParser();
+xmlDoc = parser.parseFromString(xml_str,"text/xml");
+
+console.log(xml_str);
+
+var game_id=xmlDoc.getElementsByTagName("game")[0].id;
+var game_title = xmlDoc.getElementsByTagName("game")[0].attributes[1].value;
+
+var levels=[];
+var levelsNum = xmlDoc.getElementsByTagName("level");
+for (var i =0 ; i < levelsNum.length; i++){
+    // levels.push([]);
+    var level=[];
+    level["id"]=xmlDoc.getElementsByTagName("level")[i].id;
+    level["title"]=xmlDoc.getElementsByTagName("level")[i].attributes[1].value;
+    level["timer"]=xmlDoc.getElementsByTagName("level")[i].attributes[2].value;
+    level["rows"]=xmlDoc.getElementsByTagName("level")[i].children[0].textContent;
+    level["cols"]=xmlDoc.getElementsByTagName("level")[i].children[1].textContent;
+    level["mines"]=xmlDoc.getElementsByTagName("level")[i].children[2].textContent;
+    level["time"]=xmlDoc.getElementsByTagName("level")[i].children[3].textContent;
+
+    levels.push(level);
+}
