@@ -90,6 +90,11 @@ d.appendChild(s1);
 d.appendChild(s2);
 
 win.appendChild(d);
+
+var grid= document.createElement("div");
+grid.className="grid";
+win.appendChild(grid);
+
 document.body.appendChild(win);
 
 // ------------------------first step finished!
@@ -119,3 +124,52 @@ for (var i =0 ; i < levelsNum.length; i++){
 
     levels.push(level);
 }
+
+
+//--------------------second step finished!
+
+
+function makeNewGameXml(){
+    var level=_rand(0,levels.length-1);
+    var xml = "<request>" +
+            "<rows>"+levels[level]["rows"]+"</rows>"+
+            "<cols>"+levels[level]["cols"]+"</cols>"+
+            "<mines>"+levels[level]["mines"]+"</mines>"+
+        "</request>";
+    return xml;
+}
+
+
+
+function makeXSL() {
+// This XSL Should Convert level.xml to
+// appreciate DOM elements for #grid.
+    var xml= `
+  <?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+     <xsl:template match="/">
+        <xsl:for-each select="/grid/row">
+            <xsl:for-each select="col">
+       <xsl:choose>
+                    <xsl:when test="@mine ='true'">
+                        <span  data-value="mine">
+			 <xsl:attribute name="id"><xsl:value-of select="@col"/><xsl:value-of select="../@row"/></xsl:attribute>
+			</span>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <span>
+			 <xsl:attribute name="id"><xsl:value-of select="@col"/><xsl:value-of select="../@row"/></xsl:attribute>
+			</span>	
+                    </xsl:otherwise>
+          	  </xsl:choose>
+
+            </xsl:for-each>
+        </xsl:for-each>
+    </xsl:template>
+  </xsl:stylesheet>
+    `
+;
+    return new DOMParser().parseFromString(xml,"text/xml")
+}
+
+
