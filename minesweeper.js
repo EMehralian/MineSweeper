@@ -93,6 +93,7 @@ win.appendChild(d);
 
 var grid= document.createElement("div");
 grid.className="grid";
+grid.id="grid";
 win.appendChild(grid);
 
 document.body.appendChild(win);
@@ -104,7 +105,7 @@ var xml_str = getGameXML();
 parser = new DOMParser();
 xmlDoc = parser.parseFromString(xml_str,"text/xml");
 
-console.log(xml_str);
+// console.log(xml_str);
 
 var game_id=xmlDoc.getElementsByTagName("game")[0].id;
 var game_title = xmlDoc.getElementsByTagName("game")[0].attributes[1].value;
@@ -144,8 +145,7 @@ function makeNewGameXml(){
 function makeXSL() {
 // This XSL Should Convert level.xml to
 // appreciate DOM elements for #grid.
-    var xml= `
-  <?xml version="1.0" encoding="UTF-8"?>
+    var xml= `<?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
      <xsl:template match="/">
         <xsl:for-each select="/grid/row">
@@ -173,3 +173,26 @@ function makeXSL() {
 }
 
 
+function newGame() {
+
+    var requestXML=makeNewGameXml();
+
+    getNewGame(requestXML, function(xmlStr) {
+// Process and convert xmlStr to DOM using XSLTProcessor
+
+        var xsl=makeXSL();
+        var xml=new  DOMParser().parseFromString(xmlStr,"text/xml");
+        // console.log(xml.children[0].tagName);
+        xsltProcessor = new XSLTProcessor();
+        xsltProcessor.importStylesheet(xsl);
+        resultDocument = xsltProcessor.transformToFragment(xml, document);
+        document.getElementById("grid").appendChild(resultDocument);
+        // xsltProcessor = new XSLTProcessor();
+        // xsltProcessor.importStylesheet(makeXSL());
+        // // console.log(makeXSL().children[0].tagName);
+        // resultDocument = xsltProcessor.transformToFragment(xmlStr, document);
+        //
+        // document.getElementById('grid').appendChild(resultDocument);
+    });
+}
+newGame();
