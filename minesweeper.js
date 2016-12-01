@@ -1,7 +1,10 @@
 // Test Funcs
 // See Inspect Element's Console Log Output
 
-
+var counter=0;
+var startFlag = false;
+var foundedMines = 0;
+var cell=[];
 
 /*
  getNewGame(`
@@ -129,9 +132,9 @@ for (var i =0 ; i < levelsNum.length; i++){
 
 //--------------------second step finished!
 
-
+var currentLevel=_rand(0,levels.length-1);
 function makeNewGameXml(){
-    var level=_rand(0,levels.length-1);
+    var level=currentLevel;
     var xml = "<request>" +
             "<rows>"+levels[level]["rows"]+"</rows>"+
             "<cols>"+levels[level]["cols"]+"</cols>"+
@@ -187,12 +190,125 @@ function newGame() {
         xsltProcessor.importStylesheet(xsl);
         resultDocument = xsltProcessor.transformToFragment(xml, document);
         document.getElementById("grid").appendChild(resultDocument);
-        // xsltProcessor = new XSLTProcessor();
-        // xsltProcessor.importStylesheet(makeXSL());
-        // // console.log(makeXSL().children[0].tagName);
-        // resultDocument = xsltProcessor.transformToFragment(xmlStr, document);
-        //
-        // document.getElementById('grid').appendChild(resultDocument);
     });
+
+    for (var n= 1 ; n <=levels[currentLevel]["cols"];n++ )
+        for (var m= 1 ; m <=levels[currentLevel]["rows"];m++ )
+            cell.push(document.getElementById(n*10+m))
+
+    for(var i=0 ; i <cell.length;i++){
+        cell[i].addEventListener('mousedown', function (e){
+            console.log(e.button);
+            if(e.which === 1){
+                leftclickedCell(this.id);
+            }
+            else if(e.which === 3){
+                this.setAttribute("oncontextmenu","javascript:return false;");
+                rightClickedCell(this.id);
+
+            }
+        }, false);
+
+        cell[i].addEventListener('mouseup', function (e){
+            console.log(e.button);
+            if(e.which === 1){
+                console.log("left click revealed");
+                leftclickRevealedCell(this.id);
+            }
+            // else if(e.which === 3){
+            //     console.log("right click revealed");
+            //     this.setAttribute("oncontextmenu","javascript:return false;");
+            //     rightclickRevealedCell(this.id);
+            //
+            // }
+        }, false);
+    }
+
+
 }
-newGame();
+
+document.onload=newGame();
+document.getElementsByClassName("smile")[0].onclick=function () {
+    if(document.getElementById("grid").childElementCount>0)
+    {
+        var element=document.getElementById("grid");
+        while(element.firstChild)
+            element.removeChild(element.firstChild);
+    }
+    newGame();
+};
+
+// var cell = document.getElementsByTagName('span');
+
+
+
+function leftclickedCell(clicked_id){
+    startFlag=true;
+    startGame();
+    console.log(startFlag);
+    if(levels[currentLevel]["timer"] != "true") {
+        document.getElementsByClassName("counter")[1].textContent = ++counter;
+        console.log("Hello");
+    }
+    document.getElementById(clicked_id).className = "active";
+}
+
+function leftclickRevealedCell(clicked_id){
+    document.getElementById(clicked_id).className = "revealed";
+    console.log(clicked_id);
+    revealNeighbours(clicked_id);
+}
+
+function rightClickedCell(clicked_id) {
+
+    // document.getElementById(clicked_id).className = "revealed";
+    document.getElementById(clicked_id).setAttribute("data-state","mineGuessed");
+
+
+}
+
+function startGame(){
+    if(levels[currentLevel]["timer"] == "true") {
+        if (startFlag == true) { //timer
+            setInterval(function () {
+                if(counter <= parseInt(levels[currentLevel]["time"]))
+                    document.getElementsByClassName("counter")[1].textContent = counter++;
+                else
+                    finishGame("time");
+            }, 1000);
+
+        }
+    }
+    document.getElementsByClassName("counter")[0].textContent = parseInt(levels[currentLevel]["time"])-foundedMines;
+}
+function revealNeighbours(clicked_id){
+    console.log(levels[currentLevel]["cols"]);
+    for(var i=-1 ; i < 2 ; i++) {
+       var colId = Math.floor(parseInt(clicked_id) / 10) + i;
+        // console.log("colID1" + colId);
+
+        if( colId > 0 && colId <= levels[currentLevel]["cols"] ){
+            // console.log("coldID2" + colId);
+            for (var j=-1 ; j< 2 ; j++) {
+                rowID=parseInt(clicked_id)%10+j;
+                // console.log("rowID"+rowID)
+                if(rowID > 0 && rowID <= levels[currentLevel]["rows"] ) {
+                    var nid = (colId) * 10 + (rowID);
+                    console.log("nID"+nid);
+                    if(document.getElementById(nid).getAttribute("data-check")!= "true"){
+                        document.getElementById(nid).setAttribute("data-check","true");
+                        if (document.getElementById(nid).getAttribute("data-value") != "mine") {
+                            document.getElementById(nid).className = "revealed";
+                            revealNeighbours(nid);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+function finishGame(reason){
+
+}
