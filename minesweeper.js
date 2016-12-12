@@ -1,10 +1,15 @@
 // Test Funcs
 // See Inspect Element's Console Log Output
-
-var counter=0;
-var startFlag = false;
-var foundedMines = 0;
-var cell=[];
+var levelsNum;
+var timeCounter;
+var counter;
+var startFlag ;
+var foundedMines ;
+var guessedMines;
+var cell;
+var mineCells;
+var wined;
+var interval;
 
 /*
  getNewGame(`
@@ -26,24 +31,40 @@ modal_content.className="modal-content";
 modal.appendChild(modal_content);
 
 var input = document.createElement("input");
+input.type="text";
 input.id="name";
 input.className="filed";
+input.setAttribute("required","");
 input.setAttribute('placeholder','Enter your name');
+input.setAttribute('pattern','[A-Za-z ]*');
+input.title="you just can use A-Z a-z and space!";
 modal_content.appendChild(input);
 
 var btn = document.createElement("BUTTON");
+btn.id="okbtn";
 btn.style.marginLeft="10px";
 var t = document.createTextNode("OK");
 btn.appendChild(t);
 modal_content.appendChild(btn);
 document.body.appendChild(modal);
 
+document.getElementById("okbtn").addEventListener("click",validation,false)
+function validation() {
+    console.log("validation");
+    var s=document.getElementById("name");
+
+    if(/^[a-z]+$/i.test(s.value))
+        document.getElementById("alert-modal").style.display="none";
+
+}
 
 
 var win= document.createElement("div");
+win.id="win";
 win.className="window";
 
 var title_bar = document.createElement("div");
+title_bar.id="titlebar";
 title_bar.className="title-bar";
 
 win.appendChild(title_bar);
@@ -81,6 +102,7 @@ s.appendChild(t);
 
 var s1 = document.createElement("span");
 s1.className="smile";
+s1.id="smile";
 s1.setAttribute("data-value","normal");
 
 var s2 = document.createElement("span");
@@ -112,10 +134,10 @@ xmlDoc = parser.parseFromString(xml_str,"text/xml");
 
 var game_id=xmlDoc.getElementsByTagName("game")[0].id;
 var game_title = xmlDoc.getElementsByTagName("game")[0].attributes[1].value;
-
+validate(xmlDoc);
 var levels=[];
-var levelsNum = xmlDoc.getElementsByTagName("level");
-for (var i =0 ; i < levelsNum.length; i++){
+levelsNum = xmlDoc.getElementsByTagName("level").length;
+for (var i =0 ; i < levelsNum; i++){
     // levels.push([]);
     var level=[];
     level["id"]=xmlDoc.getElementsByTagName("level")[i].id;
@@ -128,22 +150,31 @@ for (var i =0 ; i < levelsNum.length; i++){
 
     levels.push(level);
 }
-
+// xml validation
+function validate(xml) {
+    if(game_id != "minesweeper")
+        alert("xml id is incorrect");
+    if(!game_title)
+        alert("xml:game title is required");
+    for (var i =0 ; i < levelsNum; i++){
+        if(!(levels[i]["id"] && levels[i]["title"] && levels[i]["timer"] && levels[i]["rows"] && levels[i]["cols"] && levels[i]["mines"]))
+            alert("there is a problem in xml tags, please fix it before continue");
+    }
+}
 
 //--------------------second step finished!
 
-var currentLevel=_rand(0,levels.length-1);
+var currentLevel;
+
 function makeNewGameXml(){
     var level=currentLevel;
     var xml = "<request>" +
-            "<rows>"+levels[level]["rows"]+"</rows>"+
-            "<cols>"+levels[level]["cols"]+"</cols>"+
-            "<mines>"+levels[level]["mines"]+"</mines>"+
+        "<rows>"+levels[level]["rows"]+"</rows>"+
+        "<cols>"+levels[level]["cols"]+"</cols>"+
+        "<mines>"+levels[level]["mines"]+"</mines>"+
         "</request>";
     return xml;
 }
-
-
 
 function makeXSL() {
 // This XSL Should Convert level.xml to
@@ -177,6 +208,20 @@ function makeXSL() {
 
 
 function newGame() {
+    timeCounter=0;
+    counter=0;
+    startFlag = false;
+    foundedMines = 0;
+    guessedMines =0;
+    cell=[];
+    mineCells=[];
+    wined=false;
+
+
+
+    currentLevel=_rand(0,levels.length-1);
+
+
 
     var requestXML=makeNewGameXml();
 
@@ -193,13 +238,19 @@ function newGame() {
     });
 
     for (var n= 1 ; n <=levels[currentLevel]["cols"];n++ )
-        for (var m= 1 ; m <=levels[currentLevel]["rows"];m++ )
-            cell.push(document.getElementById(n*10+m))
+        for (var m= 1 ; m <=levels[currentLevel]["rows"];m++ ){
+
+            cell.push(document.getElementById(n*10+m));
+            if(document.getElementById(n*10+m).getAttribute("data-value")=="mine")
+                mineCells.push(document.getElementById(n*10+m));
+
+        }
 
     for(var i=0 ; i <cell.length;i++){
         cell[i].addEventListener('mousedown', function (e){
-            console.log(e.button);
+            console.log(e.which);
             if(e.which === 1){
+                // console.log("hello");
                 leftclickedCell(this.id);
             }
             else if(e.which === 3){
@@ -207,28 +258,44 @@ function newGame() {
                 rightClickedCell(this.id);
 
             }
+            else if(e.which === 2){
+                questionfunc(this.id);
+            }
         }, false);
 
         cell[i].addEventListener('mouseup', function (e){
-            console.log(e.button);
+            console.log("hi");
             if(e.which === 1){
                 console.log("left click revealed");
                 leftclickRevealedCell(this.id);
             }
-            // else if(e.which === 3){
-            //     console.log("right click revealed");
-            //     this.setAttribute("oncontextmenu","javascript:return false;");
-            //     rightclickRevealedCell(this.id);
-            //
-            // }
+
         }, false);
+
+
     }
 
 
+    document.getElementById("smile").setAttribute("data-value","normal");
+    numberCalc();
+    document.getElementsByClassName("counter")[1].textContent=0;
+    document.getElementsByClassName("counter")[0].textContent=parseInt(levels[currentLevel]["mines"]);
 }
+
+function questionfunc(clicked_id) {
+
+    if(document.getElementById(clicked_id).getAttribute("data-state")!="questioned") {
+        document.getElementById(clicked_id).setAttribute("data-state", "questioned");
+    }
+    else {
+        document.getElementById(clicked_id).setAttribute("data-state", "");
+    }
+}
+
 
 document.onload=newGame();
 document.getElementsByClassName("smile")[0].onclick=function () {
+    alert("start new game?");
     if(document.getElementById("grid").childElementCount>0)
     {
         var element=document.getElementById("grid");
@@ -238,51 +305,90 @@ document.getElementsByClassName("smile")[0].onclick=function () {
     newGame();
 };
 
-// var cell = document.getElementsByTagName('span');
-
-
-
 function leftclickedCell(clicked_id){
     startFlag=true;
-    startGame();
     console.log(startFlag);
+    counter++;
+    if(counter==1)
+        startGame();
     if(levels[currentLevel]["timer"] != "true") {
-        document.getElementsByClassName("counter")[1].textContent = ++counter;
-        console.log("Hello");
+        document.getElementsByClassName("counter")[1].textContent = counter;
     }
     document.getElementById(clicked_id).className = "active";
 }
 
 function leftclickRevealedCell(clicked_id){
-    document.getElementById(clicked_id).className = "revealed";
-    console.log(clicked_id);
-    revealNeighbours(clicked_id);
+    if(document.getElementById(clicked_id).getAttribute("data-state")!="mineGuessed") {
+        document.getElementById(clicked_id).className = "revealed";
+        if (document.getElementById(clicked_id).getAttribute("data-value") == "mine") {
+            wined = false;
+            finishGame("booombed");
+        }
+        else {
+            revealNeighbours(clicked_id);
+            showNeighbours(clicked_id);
+        }
+    }
+    else
+        document.getElementById(clicked_id).className=""
 }
 
 function rightClickedCell(clicked_id) {
+    if(guessedMines< parseInt(levels[currentLevel]["mines"])) {
 
-    // document.getElementById(clicked_id).className = "revealed";
-    document.getElementById(clicked_id).setAttribute("data-state","mineGuessed");
+        for(var m=0 ; m < mineCells.length ; m++)
+            if(document.getElementById(clicked_id)==mineCells[m]){
+                mineCells.splice(m,1);
 
+            }
+
+        if(document.getElementById(clicked_id).getAttribute("data-state")!="mineGuessed") {
+            guessedMines++;
+            updateMineCounter();
+            document.getElementById(clicked_id).setAttribute("data-state", "mineGuessed");
+        }
+        else {
+            guessedMines--;
+            updateMineCounter();
+            document.getElementById(clicked_id).setAttribute("data-state", "");
+        }
+    }
+    if(mineCells.length==0){
+        wined=true;
+        finishGame("win");
+    }
 
 }
 
 function startGame(){
     if(levels[currentLevel]["timer"] == "true") {
         if (startFlag == true) { //timer
-            setInterval(function () {
-                if(counter <= parseInt(levels[currentLevel]["time"]))
-                    document.getElementsByClassName("counter")[1].textContent = counter++;
-                else
-                    finishGame("time");
-            }, 1000);
-
+            interval=setInterval(setTimer, 1000);
         }
     }
-    document.getElementsByClassName("counter")[0].textContent = parseInt(levels[currentLevel]["time"])-foundedMines;
+
+
 }
+
+function updateMineCounter() {
+    document.getElementsByClassName("counter")[0].textContent = parseInt(levels[currentLevel]["mines"])-guessedMines;
+}
+
+function setTimer(){
+    if(timeCounter <= parseInt(levels[currentLevel]["time"])){
+        document.getElementsByClassName("counter")[1].textContent = timeCounter;
+        timeCounter++;
+    }
+    else{
+        alert("time is up!");
+        finishGame("time");
+    }
+
+}
+
+
 function revealNeighbours(clicked_id){
-    console.log(levels[currentLevel]["cols"]);
+    // console.log(levels[currentLevel]["cols"]);
     for(var i=-1 ; i < 2 ; i++) {
        var colId = Math.floor(parseInt(clicked_id) / 10) + i;
         // console.log("colID1" + colId);
@@ -294,13 +400,14 @@ function revealNeighbours(clicked_id){
                 // console.log("rowID"+rowID)
                 if(rowID > 0 && rowID <= levels[currentLevel]["rows"] ) {
                     var nid = (colId) * 10 + (rowID);
-                    console.log("nID"+nid);
+                    // console.log("nID"+nid);
                     if(document.getElementById(nid).getAttribute("data-check")!= "true"){
                         document.getElementById(nid).setAttribute("data-check","true");
-                        if (document.getElementById(nid).getAttribute("data-value") != "mine") {
+                        if (document.getElementById(nid).getAttribute("data-value") != "mine" && document.getElementById(nid).getAttribute("data-state") != "mineGuessed") {
                             document.getElementById(nid).className = "revealed";
                             revealNeighbours(nid);
                         }
+
                     }
                 }
             }
@@ -308,7 +415,122 @@ function revealNeighbours(clicked_id){
     }
 }
 
+function showNeighbours(clicked_id){
+    if(document.getElementById(clicked_id).className == "revealed") {
+        var guessCount = 0;
+        for (var i = -1; i < 2; i++) {
+            var colId = Math.floor(parseInt(clicked_id) / 10) + i;
+            if (colId > 0 && colId <= levels[currentLevel]["cols"]) {
+                for (var j = -1; j < 2; j++) {
+                    rowID = parseInt(clicked_id) % 10 + j;
+                    if (rowID > 0 && rowID <= levels[currentLevel]["rows"]) {
+                        var nid = (colId) * 10 + (rowID);
+                        if (document.getElementById(nid).getAttribute("data-state") != "mineGuessed") {
+                            guessCount++;
 
-function finishGame(reason){
+                        }
+                    }
+                }
+            }
+        }
+        if (guessCount == document.getElementById(nid).getAttribute("data-value"))
+            for (var i = -1; i < 2; i++) {
+                var colId = Math.floor(parseInt(clicked_id) / 10) + i;
+                if (colId > 0 && colId <= levels[currentLevel]["cols"]) {
+                    for (var j = -1; j < 2; j++) {
+                        rowID = parseInt(clicked_id) % 10 + j;
+                        if (rowID > 0 && rowID <= levels[currentLevel]["rows"]) {
+                            var nid = (colId) * 10 + (rowID);
+                            document.getElementById(nid).className = "revealed";
 
+                        }
+                    }
+                }
+            }
+    }
+}
+
+
+function numberCalc() {
+
+    for (var n= 1 ; n <=levels[currentLevel]["cols"];n++ )
+        for (var m= 1 ; m <=levels[currentLevel]["rows"];m++ ) {
+            var minecount = 0;
+            cid=n*10+m;
+            for (var i = -1; i < 2; i++) {
+                var colId = Math.floor(parseInt(cid) / 10) + i;
+                if (colId > 0 && colId <= levels[currentLevel]["cols"]) {
+                    for (var j = -1; j < 2; j++) {
+                        if(!(i==0 && j==0)) {
+                            rowID = parseInt(cid) % 10 + j;
+                            // console.log("rowID"+rowID)
+                            if (rowID > 0 && rowID <= levels[currentLevel]["rows"]) {
+                                var nid = (colId) * 10 + (rowID);
+                                if (document.getElementById(nid).getAttribute("data-value") == "mine")
+                                    minecount++;
+                            }
+                        }
+                    }
+                }
+            }
+            if (document.getElementById(cid).getAttribute("data-value") != "mine") {
+                document.getElementById(cid).setAttribute("data-value", minecount);
+            }
+        }
+}
+
+function finishGame(reason) {
+    document.getElementsByClassName("counter")[1].textContent=0;
+    console.log("wined"+wined);
+    if (wined == true) {
+        document.getElementById("smile").setAttribute("data-value","win");
+        alert("you won");
+        // v
+    } else {
+        document.getElementById("smile").setAttribute("data-value","");
+        alert("you looose");
+
+    }
+    if(document.getElementById("grid").childElementCount>0)
+    {
+        var element=document.getElementById("grid");
+        while(element.firstChild)
+            element.removeChild(element.firstChild);
+    }
+    clearInterval(interval);
+    newGame();
+}
+
+document.getElementById("smile").addEventListener("mousemove",function () {document.getElementById("smile").setAttribute("data-value","hover");},false);
+document.getElementById("smile").addEventListener("mouseout",function () {document.getElementById("smile").setAttribute("data-value","normal");},false);
+
+
+
+
+window.onload = addListeners;
+function addListeners(){
+    document.getElementById('titlebar').addEventListener('mousedown', mouseDown, false);
+    window.addEventListener('mouseup', mouseUp, false);
+
+}
+
+function mouseUp()
+{
+    window.removeEventListener('mousemove', divMove, true);
+}
+
+function mouseDown(e){
+    window.addEventListener('mousemove', divMove, true);
+}
+
+function divMove(e){
+    console.log("X"+e.clientX);
+    console.log("Y"+e.clientY);
+
+    //
+    var div = document.getElementById('win');
+    // div.style.position = 'absolute';
+    console.log(div.style.top);
+    div.style.top = e.clientY+' px';
+    div.style.left = e.clientX+' px';
 }

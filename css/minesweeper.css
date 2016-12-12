@@ -43,7 +43,7 @@ body {
 }
 
 .window:after {
-    position: absolute;
+    position: relative;
     content: '';
     right: -5px;
     bottom: -5px;
@@ -137,7 +137,7 @@ body {
 }
 
 .grid span:after {
-    content: '';
+    content:  ' ';
     position: absolute;
     left: 0;
     top: 0;
@@ -157,9 +157,20 @@ body {
     border-width: 2px 0 0 2px;
 }
 
+.grid span[data-state="mineGuessed"]:after{
+    content: '⚑';
+    font-size: .75rem;
+    color: red;
+}
+.grid span[data-state="questioned"]:after{
+    content: '?';
+    font-size: .75rem;
+}
+
 .grid span.revealed:after {
     display: none;
 }
+
 
 .grid span.revealed[data-value='1']:before {
     content: '1';
@@ -205,6 +216,12 @@ body {
     content: '💣';
     font-size: .75rem;
 }
+
+.grid span [data-state='mineGuessed']:before {
+    content: '⚑';
+    font-size: .75rem;
+}
+
 
 .smile:after {
     content: '😶';
